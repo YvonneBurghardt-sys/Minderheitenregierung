@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lernassistent: Minderheitsregierung</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f1f0ed;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --text: #1a1a18;
+    --text2: #5a5955;
+    --text3: #9a9895;
+    --blue-bg: #e6f1fb;
+    --blue-mid: #378add;
+    --blue-dark: #185fa5;
+    --blue-darker: #0c447c;
+    --amber-bg: #faeeda;
+    --amber-text: #633806;
+    --amber-border: #ef9f27;
+    --green-bg: #eaf3de;
+    --green-text: #3b6d11;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --surface: #252523;
+      --surface2: #2e2e2b;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --text: #f0ede8;
+      --text2: #a0a09a;
+      --text3: #666662;
+      --blue-bg: #0c2a45;
+      --blue-mid: #378add;
+      --blue-dark: #5ba3e8;
+      --blue-darker: #85b7eb;
+      --amber-bg: #2e1f06;
+      --amber-text: #fac775;
+      --amber-border: #854f0b;
+      --green-bg: #0e2205;
+      --green-text: #97c459;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .top-header {
+    margin-bottom: 1.5rem;
+  }
+  .top-header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .top-header p {
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .progress-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.25rem;
+  }
+  .prog-step {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .prog-step.active { background: var(--blue-mid); }
+  .prog-step.done { background: var(--blue-dark); }
+
+  .station-nav {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .snav-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    border: 0.5px solid var(--border2);
+    border-radius: 20px;
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .snav-btn:hover { background: var(--surface2); }
+  .snav-btn.active {
+    background: var(--blue-bg);
+    color: var(--blue-darker);
+    border-color: var(--blue-mid);
+    font-weight: 500;
+  }
+  .snav-btn.done { border-style: dashed; }
+  .snav-btn.done::after { content: " ✓"; }
+
+  .chat-wrap {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    min-height: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 1rem;
+    overflow-y: auto;
+    max-height: 480px;
+  }
+
+  .msg { display: flex; flex-direction: column; gap: 3px; max-width: 86%; }
+  .msg.bot { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+  .msg-label { font-size: 11px; color: var(--text3); padding: 0 3px; }
+  .msg.user .msg-label { text-align: right; }
+
+  .bubble {
+    padding: 10px 14px;
+    font-size: 14px;
+    line-height: 1.65;
+    border-radius: 4px 12px 12px 12px;
+  }
+  .msg.bot .bubble {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    color: var(--text);
+  }
+  .msg.user .bubble {
+    background: var(--blue-dark);
+    color: #e6f1fb;
+    border-radius: 12px 4px 12px 12px;
+  }
+
+  .hint-box {
+    background: var(--amber-bg);
+    border: 0.5px solid var(--amber-border);
+    border-radius: var(--radius-sm);
+    padding: 9px 13px;
+    font-size: 13px;
+    color: var(--amber-text);
+    margin-top: 2px;
+  }
+  .hint-box strong { display: block; margin-bottom: 2px; }
+
+  .scenario-box {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-top: 6px;
+  }
+  .scenario-box h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .scenario-box p { font-size: 13px; line-height: 1.6; color: var(--text2); }
+
+  .questions-box {
+    background: var(--green-bg);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-top: 6px;
+  }
+  .questions-box p {
+    font-size: 13px;
+    color: var(--green-text);
+    line-height: 1.6;
+    margin-bottom: 6px;
+  }
+  .questions-box p:last-child { margin-bottom: 0; }
+
+  .args-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  .args-table td {
+    padding: 6px 8px;
+    border-bottom: 0.5px solid var(--border);
+    vertical-align: top;
+  }
+  .args-table td:first-child { color: var(--text2); width: 38%; }
+  .args-table h4 { font-size: 13px; font-weight: 600; margin: 10px 0 4px; color: var(--text); }
+
+  .typing {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+  }
+  .typing span {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--border2);
+    animation: blink 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0.25; }
+    40% { opacity: 1; }
+  }
+
+  .quick-area {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    min-height: 36px;
+  }
+  .qbtn {
+    padding: 7px 15px;
+    font-size: 13px;
+    border: 0.5px solid var(--border2);
+    border-radius: 20px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .qbtn:hover { background: var(--blue-bg); border-color: var(--blue-mid); color: var(--blue-darker); }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .input-row input {
+    flex: 1;
+    padding: 9px 14px;
+    font-size: 14px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input-row input:focus { border-color: var(--blue-dark); }
+  .input-row input::placeholder { color: var(--text3); }
+  .send-btn {
+    padding: 9px 18px;
+    background: var(--blue-dark);
+    color: #e6f1fb;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .send-btn:hover { background: var(--blue-darker); }
+  .send-btn:disabled { background: var(--border); color: var(--text3); cursor: default; }
+
+  .bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .hint-link {
+    font-size: 12px;
+    color: var(--blue-dark);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: inherit;
+    padding: 0;
+  }
+  .station-counter {
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  .api-note {
+    margin-top: 1.5rem;
+    padding: 10px 14px;
+    background: var(--amber-bg);
+    border: 0.5px solid var(--amber-border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--amber-text);
+  }
+  .api-note a { color: var(--amber-text); }
+
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="top-header">
+    <h1>Minderheitsregierung — was steckt dahinter?</h1>
+    <p>Ein geführter Lernpfad in 4 Stationen · Gemeinschaftskunde/Politik</p>
+  </div>
+
+  <div class="progress-row">
+    <div class="prog-step active" id="p0"></div>
+    <div class="prog-step" id="p1"></div>
+    <div class="prog-step" id="p2"></div>
+    <div class="prog-step" id="p3"></div>
+  </div>
+
+  <div class="station-nav" id="stationNav">
+    <button class="snav-btn active" id="sb0" onclick="goStation(0)">⚖ Rechtlich möglich?</button>
+    <button class="snav-btn" id="sb1" onclick="goStation(1)">🏛 Regieren ohne Mehrheit?</button>
+    <button class="snav-btn" id="sb2" onclick="goStation(2)">🤝 Das AfD-Problem</button>
+    <button class="snav-btn" id="sb3" onclick="goStation(3)">✅ Meine Bewertung</button>
+  </div>
+
+  <div class="chat-wrap" id="chatWrap"></div>
+
+  <div class="quick-area" id="quickArea"></div>
+
+  <div class="input-row">
+    <input type="text" id="userInput" placeholder="Deine Antwort…" onkeydown="if(event.key==='Enter')sendMsg()" />
+    <button class="send-btn" id="sendBtn" onclick="sendMsg()">Senden</button>
+  </div>
+
+  <div class="bottom-row">
+    <button class="hint-link" id="hintBtn" onclick="showHint()" style="visibility:hidden">Tipp anzeigen</button>
+    <span class="station-counter" id="stationCounter">Station 1 von 4</span>
+  </div>
+
+  <div class="api-note" id="apiNote">
+    ⚙ Dieser Assistent benötigt einen Anthropic API-Key. Trage ihn in Zeile 1 des &lt;script&gt;-Blocks in der HTML-Datei ein: <code>const API_KEY = "sk-ant-..."</code>
+  </div>
+
+</div>
+
+<script>
+const API_KEY = "HIER_API_KEY_EINTRAGEN";
+
+// ─── Systemkontext für die KI ───────────────────────────────────────────────
+const SYSTEM = `Du bist ein Lernassistent im Gemeinschaftskundeunterricht (Gymnasium, Kursstufe).
+Das Thema ist: Minderheitsregierung in Deutschland – am Beispiel einer möglichen CDU/CSU-Minderheitsregierung nach einem Bruch der schwarz-roten Koalition 2025/26.
+
+DEINE AUFGABE:
+- Führe den Schüler durch 4 Stationen: (1) Rechtliche Grundlagen, (2) Parlamentarische Praxis, (3) AfD-Problem / Brandmauer, (4) Bewertung.
+- Stelle jeweils EINE klare Frage. Warte auf eine echte Antwort. Bewerte sie inhaltlich.
+- Wenn die Antwort unvollständig oder falsch ist: Gib einen Hinweis und frag nochmal – gib die Lösung NICHT einfach her.
+- Wenn die Antwort korrekt oder plausibel ist: Bestätige kurz und vertiefe.
+
+INHALTLICHE GRUNDLAGE (korrekte Fakten):
+- Das Grundgesetz kennt keinen Koalitionszwang. Art. 63 GG regelt nur die Kanzlerwahl.
+- Kanzlermehrheit = Mehrheit der Mitglieder des Bundestages. Der aktuelle Bundestag hat 630 Mitglieder, also sind 316 Stimmen nötig.
+- Art. 67 GG: konstruktives Misstrauensvotum – Abwahl nur mit gleichzeitiger Wahl eines Nachfolgers.
+- Art. 68 GG: Vertrauensfrage durch den Kanzler.
+- Art. 81 GG: Gesetzgebungsnotstand – nur als ultima ratio, setzt voraus, dass Vertrauen verweigert wurde und Bundestag nicht aufgelöst wurde.
+- Minderheitsregierung verliert Ausschussmehrheiten (§57 GO-BT), hat keine Garantie über die Tagesordnung (§20 GO-BT), braucht bei Zustimmungsgesetzen den Bundesrat.
+- Wichtige Unterscheidung: aktive Kooperation mit AfD (Koalition, gemeinsame Anträge) ≠ parlamentarische Zustimmung der AfD zu einem Gesetz.
+- Der CDU/CSU hat nach der Bundestagswahl 2025 208 Sitze.
+
+STATION 4 – BEWERTUNG:
+- Hier DARFST DU KEINE Meinung vertreten und keine Richtung vorgeben.
+- Stelle offene Fragen zu: Legitimität (Darf eine Minderheitsregierung das?), Folgen (Was könnte passieren?), eigener Abwägung.
+- Fasse am Ende NUR zusammen, was der Schüler selbst genannt hat – keine eigene Wertung.
+- Auf explizite Anfrage kannst du eine Argumenteübersicht zeigen.
+
+SPRACHE: Klar, knapp, auf Gymnasialniveau. Kein akademischer Jargon. Keine langen Texte.
+LÄNGE: Maximal 4-5 Sätze pro Antwort.
+
+SONDERREGEL – GEDANKENEXPERIMENT:
+Wenn der Schüler schreibt „Wir sind am Ende. Bitte Gedankenexperiment-Fazit", antworte GENAU so:
+
+1. Beschreibe knapp (je 3-4 Sätze, OHNE Wertung):
+   SZENARIO A: Deutschland 2027 – die CDU/CSU-Minderheitsregierung funktioniert. Wie sieht der politische Alltag aus? Was hat sich verändert?
+   SZENARIO B: Deutschland 2027 – die Minderheitsregierung ist gescheitert, es gab Neuwahlen. Was ist passiert? Wie sieht die Lage aus?
+
+2. Stelle danach GENAU DREI kurze, offene Fragen – eine zu persönlicher Präferenz, eine zu Chancen/Risiken, eine zu möglichen Mischformen oder Alternativen.
+
+3. Schreibe danach NICHTS MEHR. Kein Kommentar, keine Einordnung, keine Einladung zur Fortsetzung.`;
+
+// ─── Stationsdaten ───────────────────────────────────────────────────────────
+const STATIONS = [
+  {
+    id: 0,
+    label: "⚖ Rechtlich möglich?",
+    badge: "Grundgesetz",
+    opener: `<strong>Station 1: Ist eine Minderheitsregierung rechtlich möglich?</strong><br><br>Bevor wir bewerten, prüfen wir zuerst: Schreibt das Grundgesetz vor, dass eine Regierung eine feste Koalition mit Parlamentsmehrheit braucht?`,
+    quickReplies: ["Ja, das ist Pflicht", "Nein, das steht da nicht", "Ich bin unsicher"],
+    hint: "Schau dir Art. 63 GG an: Was steht dort genau — findest du das Wort „Koalition"?"
+  },
+  {
+    id: 1,
+    label: "🏛 Regieren ohne Mehrheit?",
+    badge: "Parlamentspraxis",
+    opener: `<strong>Station 2: Wie regiert man ohne Mehrheit?</strong><br><br>Angenommen, die CDU/CSU hat nur 208 von 630 Bundestagssitzen. Im Bundestag gibt es Abstimmungen über jedes Gesetz. Was muss die Regierung dann für jedes Gesetz tun?`,
+    quickReplies: ["Mehrheiten suchen", "Koalition bilden", "Über den Bundesrat gehen"],
+    hint: "Denk an: Wer sitzt in den Ausschüssen? Wer legt die Tagesordnung fest? Wer muss bei bestimmten Gesetzen noch zustimmen?"
+  },
+  {
+    id: 2,
+    label: "🤝 Das AfD-Problem",
+    badge: "Demokratietheorie",
+    opener: `<strong>Station 3: Das AfD-Problem</strong><br><br>Kritiker sagen: Eine Minderheitsregierung kann nur funktionieren, wenn die AfD mitmacht. Deshalb sei sie unakzeptabel — „Brandmauer".<br><br>Was denkst du: Ist es dasselbe, ob eine Partei <em>mit</em> der AfD eine Koalition eingeht — oder ob die AfD einem Gesetz im Bundestag einfach <em>zustimmt</em>?`,
+    quickReplies: ["Ja, das ist dasselbe", "Nein, das ist ein Unterschied", "Kommt auf den Fall an"],
+    hint: "Überlege: Wer entscheidet den Inhalt eines Gesetzes — die Regierung, die es einbringt, oder die Fraktion, die zustimmt?"
+  },
+  {
+    id: 3,
+    label: "✅ Meine Bewertung",
+    badge: "Urteilsbildung",
+    opener: `<strong>Station 4: Deine Bewertung</strong><br><br>Du hast jetzt die rechtliche Grundlage, die parlamentarische Praxis und das AfD-Problem kennengelernt.<br><br>Jetzt geht es um dein eigenes Urteil — und das kann hier keine falsche Antwort geben.<br><br>Erste Frage: Findest du eine Minderheitsregierung <em>legitim</em>? Also: Hat sie das demokratische Recht zu regieren, auch wenn sie keine Mehrheit hinter sich hat?`,
+    quickReplies: ["Ja, sie ist legitim", "Nein, das ist nicht legitim", "Ich bin gespalten"],
+    hint: "Legitimität bedeutet nicht nur: Ist es legal? Sondern auch: Wird es als berechtigt anerkannt? Denk an: Wähler, Parlament, Demokratieprinzip."
+  }
+];
+
+// ─── Zustand ────────────────────────────────────────────────────────────────
+let currentStation = 0;
+let completed = [false, false, false, false];
+let conversationHistory = [];
+let isLoading = false;
+let hintShown = false;
+let stationStarted = false;
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  if (API_KEY === "HIER_API_KEY_EINTRAGEN") {
+    document.getElementById("apiNote").style.display = "block";
+  } else {
+    document.getElementById("apiNote").style.display = "none";
+  }
+  loadStation(0);
+};
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+function goStation(idx) {
+  currentStation = idx;
+  conversationHistory = [];
+  hintShown = false;
+  stationStarted = false;
+  loadStation(idx);
+}
+
+function loadStation(idx) {
+  const s = STATIONS[idx];
+  clearChat();
+  clearQuick();
+  updateNav();
+  updateProgress();
+  document.getElementById("stationCounter").textContent = `Station ${idx+1} von 4`;
+  document.getElementById("hintBtn").style.visibility = "visible";
+  document.getElementById("hintBtn").textContent = "Tipp anzeigen";
+  document.getElementById("hintBtn").disabled = false;
+
+  addBotMsg(s.opener, s.quickReplies);
+  stationStarted = false;
+}
+
+// ─── Nachricht senden ────────────────────────────────────────────────────────
+function sendMsg() {
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+  input.value = "";
+  clearQuick();
+  addUserMsg(text);
+  callAPI(text);
+}
+
+function handleQuick(text) {
+  clearQuick();
+  addUserMsg(text);
+  callAPI(text);
+}
+
+// ─── API-Aufruf ───────────────────────────────────────────────────────────────
+async function callAPI(userText) {
+  if (API_KEY === "HIER_API_KEY_EINTRAGEN") {
+    addBotMsg("⚠ Kein API-Key eingetragen. Bitte trage deinen Anthropic API-Key in die HTML-Datei ein.");
+    return;
+  }
+
+  isLoading = true;
+  document.getElementById("sendBtn").disabled = true;
+  document.getElementById("userInput").disabled = true;
+
+  // Stationskontext beim ersten Turn einfügen
+  if (!stationStarted) {
+    const s = STATIONS[currentStation];
+    conversationHistory.push({
+      role: "user",
+      content: `[Aktuell: Station ${s.id+1} – ${s.label}] ${userText}`
+    });
+    stationStarted = true;
+  } else {
+    conversationHistory.push({ role: "user", content: userText });
+  }
+
+  showTyping();
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 600,
+        system: SYSTEM,
+        messages: conversationHistory
+      })
+    });
+
+    const data = await res.json();
+    removeTyping();
+
+    if (data.content && data.content[0]) {
+      const reply = data.content[0].text;
+      conversationHistory.push({ role: "assistant", content: reply });
+
+      // Gedankenexperiment erkennen
+      if (userText.toLowerCase().includes("gedankenexperiment-fazit")) {
+        addBotMsgScenario(reply);
+      } else if (userText.toLowerCase().includes("argumenteübersicht") || userText.toLowerCase().includes("argumente zeigen")) {
+        addBotMsg(reply);
+        setTimeout(() => addArgsTable(), 300);
+      } else {
+        addBotMsg(reply);
+
+        // Automatischer Stationswechsel-Hinweis nach längerem Gespräch
+        if (conversationHistory.length >= 6 && currentStation < 3) {
+          setTimeout(() => {
+            const nextLabel = STATIONS[currentStation+1].label;
+            const wrap = document.getElementById("quickArea");
+            const b = document.createElement("button");
+            b.className = "qbtn";
+            b.textContent = `Weiter zu: ${nextLabel} →`;
+            b.onclick = () => {
+              completed[currentStation] = true;
+              goStation(currentStation+1);
+            };
+            wrap.appendChild(b);
+          }, 400);
+        }
+      }
+    } else {
+      addBotMsg("Es gab ein Problem mit der Antwort. Bitte versuche es erneut.");
+    }
+  } catch(e) {
+    removeTyping();
+    addBotMsg("Verbindungsfehler. Bitte prüfe deine Internetverbindung und den API-Key.");
+  }
+
+  isLoading = false;
+  document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").disabled = false;
+  document.getElementById("userInput").focus();
+}
+
+// ─── Tipp ────────────────────────────────────────────────────────────────────
+function showHint() {
+  const s = STATIONS[currentStation];
+  const chat = document.getElementById("chatWrap");
+  const div = document.createElement("div");
+  div.className = "msg bot";
+  div.innerHTML = `<span class="msg-label">Lernassistent</span>
+    <div class="bubble"><div class="hint-box"><strong>Tipp:</strong> ${s.hint}</div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  document.getElementById("hintBtn").textContent = "Tipp gezeigt";
+  document.getElementById("hintBtn").disabled = true;
+}
+
+// ─── Argumenteübersicht ───────────────────────────────────────────────────────
+function addArgsTable() {
+  const chat = document.getElementById("chatWrap");
+  const div = document.createElement("div");
+  div.className = "msg bot";
+  div.innerHTML = `<span class="msg-label">Lernassistent</span>
+  <div class="bubble">
+    <strong>Argumenteübersicht (aus dem Text)</strong>
+    <h4 style="margin-top:10px;font-size:13px">Argumente für eine Minderheitsregierung</h4>
+    <table class="args-table">
+      <tr><td>Rechtlich</td><td>GG schreibt keine Koalition vor (Art. 63). Schutz durch konstruktives Misstrauensvotum (Art. 67).</td></tr>
+      <tr><td>Parlamentarisch</td><td>Stärkung echter Debatten; Opposition wird Teil des Gestaltungsprozesses.</td></tr>
+      <tr><td>Gewaltenteilung</td><td>Echte Kontrolle durch die Parlamentsmehrheit statt des „neuen Dualismus" (Regierung + Mehrheitsfraktion = eine Einheit).</td></tr>
+      <tr><td>Demokratie</td><td>Belebt den Parlamentarismus, schließt „Repräsentationslücke".</td></tr>
+    </table>
+    <h4 style="margin-top:10px;font-size:13px">Risiken und Gegenargumente</h4>
+    <table class="args-table">
+      <tr><td>Praktisch</td><td>Keine Ausschussmehrheiten, keine sichere Tagesordnung, Bundesrat als Hindernis bei Zustimmungsgesetzen.</td></tr>
+      <tr><td>AfD-Problem</td><td>Gefahr: Brandmauer-Logik gibt der AfD faktische Vetomacht.</td></tr>
+      <tr><td>Stabilität</td><td>Unberechenbar bei der Gesetzgebung; Art. 81 (Gesetzgebungsnotstand) nur als Notfallmittel.</td></tr>
+      <tr><td>Gewöhnung</td><td>Auf Bundesebene bisher nie erprobt.</td></tr>
+    </table>
+  </div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ─── Gedankenexperiment-Anzeige ──────────────────────────────────────────────
+function addBotMsgScenario(text) {
+  // KI-Text trotzdem anzeigen — sie formatiert die Szenarien selbst
+  addBotMsg(text);
+}
+
+// ─── Chat-Hilfsfunktionen ────────────────────────────────────────────────────
+function addBotMsg(html, quickReplies) {
+  const chat = document.getElementById("chatWrap");
+  const div = document.createElement("div");
+  div.className = "msg bot";
+  div.innerHTML = `<span class="msg-label">Lernassistent</span><div class="bubble">${html}</div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+
+  clearQuick();
+  if (quickReplies && quickReplies.length) {
+    const qa = document.getElementById("quickArea");
+    quickReplies.forEach(r => {
+      const b = document.createElement("button");
+      b.className = "qbtn";
+      b.textContent = r;
+      b.onclick = () => handleQuick(r);
+      qa.appendChild(b);
+    });
+  }
+}
+
+function addUserMsg(text) {
+  const chat = document.getElementById("chatWrap");
+  const div = document.createElement("div");
+  div.className = "msg user";
+  div.innerHTML = `<span class="msg-label" style="text-align:right">Du</span><div class="bubble">${escHtml(text)}</div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  clearQuick();
+}
+
+function showTyping() {
+  const chat = document.getElementById("chatWrap");
+  const div = document.createElement("div");
+  div.id = "typingDot";
+  div.className = "msg bot";
+  div.innerHTML = `<div class="bubble" style="padding:8px 14px"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById("typingDot");
+  if (el) el.remove();
+}
+
+function clearChat() {
+  document.getElementById("chatWrap").innerHTML = "";
+}
+
+function clearQuick() {
+  document.getElementById("quickArea").innerHTML = "";
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ─── Navigation + Fortschritt ────────────────────────────────────────────────
+function updateNav() {
+  STATIONS.forEach((s, i) => {
+    const btn = document.getElementById(`sb${i}`);
+    btn.className = "snav-btn";
+    if (i === currentStation) btn.classList.add("active");
+    if (completed[i] && i !== currentStation) btn.classList.add("done");
+  });
+}
+
+function updateProgress() {
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById(`p${i}`);
+    el.className = "prog-step";
+    if (completed[i]) el.classList.add("done");
+    else if (i === currentStation) el.classList.add("active");
+  });
+}
+</script>
+</body>
+</html>
